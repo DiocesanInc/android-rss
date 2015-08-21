@@ -50,7 +50,11 @@ public final class AttributeParser {
             return defaultValue;
         }
 
-        return Integer.parseInt(value);
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     /**
@@ -63,7 +67,11 @@ public final class AttributeParser {
         if (value == null) {
             return null;
         }
-        return Integers.parseInteger(value);
+        try {
+            return Integers.parseInteger(value);
+        } catch (RSSFault rssFault) {
+            return null;
+        }
     }
 
     public static boolean booleanValue(Attributes attributes, String name, boolean defaultValue) {
