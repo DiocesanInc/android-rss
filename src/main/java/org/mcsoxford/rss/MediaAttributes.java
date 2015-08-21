@@ -18,7 +18,7 @@ package org.mcsoxford.rss;
 
 /**
  * Internal helper class for RSS 2.0 media attributes.
- * 
+ *
  * @author Mr Horn
  */
 final class MediaAttributes {
@@ -35,7 +35,7 @@ final class MediaAttributes {
   }
 
   /**
-   * Returns the RSS 2.0 attribute with the specified local name as an integer. 
+   * Returns the RSS 2.0 attribute with the specified local name as an integer.
    * The {@code defaultValue} is returned if no attribute with such name exists.
    */
   static int intValue(org.xml.sax.Attributes attributes, String name, int defaultValue) {
@@ -44,7 +44,11 @@ final class MediaAttributes {
       return defaultValue;
     }
 
-    return Integer.parseInt(value);
+    try {
+      return Integer.parseInt(value);
+    } catch (NumberFormatException e) {
+      return 0;
+    }
   }
 
 	/**
@@ -53,12 +57,17 @@ final class MediaAttributes {
 	 * exists.
 	 */
 	static Integer intValue(org.xml.sax.Attributes attributes, String name) {
-		final String value = stringValue(attributes, name);
-		if (value == null) {
-			return null;
-		}
-		return Integers.parseInteger(value);
-	}
+      final String value = stringValue(attributes, name);
+      if (value == null) {
+        return null;
+      }
+
+      try {
+        return Integers.parseInteger(value);
+      } catch (RSSFault rssFault) {
+        return null;
+      }
+    }
 
 }
 
