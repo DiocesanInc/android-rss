@@ -64,7 +64,7 @@ public class MediaContent {
         thumbnails = new ArrayList<MediaThumbnail>();
     }
 
-    public Uri geturl() {
+    public Uri getUrl() {
         return url;
     }
 
