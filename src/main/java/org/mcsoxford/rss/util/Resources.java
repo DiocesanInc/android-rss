@@ -14,38 +14,36 @@
  * limitations under the License.
  */
 
-package org.mcsoxford.rss;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+package org.mcsoxford.rss.util;
 
 /**
- * Internal helper class for date conversions.
- * 
+ * Internal helper class for resource-sensitive objects such as streams.
+ *
  * @author Mr Horn
  */
-final class Dates {
-
-  /**
-   * @see <a href="http://www.ietf.org/rfc/rfc0822.txt">RFC 822</a>
-   */
-  private static final SimpleDateFormat RFC822 = new SimpleDateFormat(
-      "EEE, dd MMM yyyy HH:mm:ss Z", java.util.Locale.ENGLISH);
+public final class Resources {
 
   /* Hide constructor */
-  private Dates() {}
-  
+  private Resources() {}
+
   /**
-   * Parses string as an RFC 822 date/time.
-   * 
-   * @throws RSSFault if the string is not a valid RFC 822 date/time
+   * Closes stream and suppresses IO faults.
+   *
+   * @return {@code null} if stream has been successfully closed,
+   *         {@link java.io.IOException} otherwise
    */
-  static java.util.Date parseRfc822(String date) {
-    try {
-      return RFC822.parse(date);
-    } catch (ParseException e) {
-      throw new RSSFault(e);
+  public static java.io.IOException closeQuietly(java.io.Closeable stream) {
+    if (stream == null) {
+      return null;
     }
+
+    try {
+      stream.close();
+    } catch (java.io.IOException e) {
+      return e;
+    }
+
+    return null;
   }
 
 }

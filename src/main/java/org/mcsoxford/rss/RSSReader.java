@@ -27,11 +27,12 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.mcsoxford.rss.util.Resources;
 
 /**
  * HTTP client to retrieve and parse RSS 2.0 feeds. Callers must call
  * {@link RSSReader#close()} to release all resources.
- * 
+ *
  * @author Mr Horn
  */
 public class RSSReader implements java.io.Closeable {
@@ -49,7 +50,7 @@ public class RSSReader implements java.io.Closeable {
   /**
    * Instantiate a thread-safe HTTP client to retrieve RSS feeds. The injected
    * {@link HttpClient} implementation must be thread-safe.
-   * 
+   *
    * @param httpclient thread-safe HTTP client implementation
    * @param parser thread-safe RSS parser SPI implementation
    */
@@ -62,7 +63,7 @@ public class RSSReader implements java.io.Closeable {
    * Instantiate a thread-safe HTTP client to retrieve RSS feeds. The injected
    * {@link HttpClient} implementation must be thread-safe. Internal memory
    * consumption and load performance can be tweaked with {@link RSSConfig}.
-   * 
+   *
    * @param httpclient thread-safe HTTP client implementation
    * @param config RSS configuration
    */
@@ -90,7 +91,7 @@ public class RSSReader implements java.io.Closeable {
   /**
    * Send HTTP GET request and parse the XML response to construct an in-memory
    * representation of an RSS 2.0 feed.
-   * 
+   *
    * @param uri RSS 2.0 feed URI
    * @return in-memory representation of downloaded RSS feed
    * @throws RSSReaderException if RSS feed could not be retrieved because of

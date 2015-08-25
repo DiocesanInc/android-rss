@@ -17,19 +17,22 @@
 package org.mcsoxford.rss;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Common data about RSS feeds and items.
- * 
+ *
  * @author Mr Horn
  */
 abstract class RSSBase {
 
-  private String title;
-  private android.net.Uri link;
-  private String description;
-  private java.util.List<String> categories;
-  private java.util.Date pubdate;
+  protected String title;
+  protected android.net.Uri link;
+  protected String description;
+  protected List<String> categories;
+  protected Date pubdate;
 
   /**
    * Specify initial capacity for the List which contains the category names.
@@ -51,15 +54,15 @@ abstract class RSSBase {
     return link;
   }
 
-  public java.util.List<String> getCategories() {
+  public List<String> getCategories() {
     if (categories == null) {
-      return java.util.Collections.emptyList();
+      return Collections.emptyList();
     }
 
-    return java.util.Collections.unmodifiableList(categories);
+    return Collections.unmodifiableList(categories);
   }
 
-  public java.util.Date getPubDate() {
+  public Date getPubDate() {
     return pubdate;
   }
 
@@ -83,7 +86,7 @@ abstract class RSSBase {
     this.categories.add(category);
   }
 
-  void setPubDate(java.util.Date pubdate) {
+  void setPubDate(Date pubdate) {
     this.pubdate = pubdate;
   }
 

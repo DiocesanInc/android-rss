@@ -2,20 +2,23 @@ package org.mcsoxford.rss;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import android.net.Uri;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Iterator;
 import java.util.TimeZone;
 
+import android.net.Uri;
+
 import org.junit.Before;
 import org.junit.Test;
+import org.mcsoxford.rss.media.MediaThumbnail;
+import org.mcsoxford.rss.util.Resources;
 
 import static org.junit.Assert.*;
 
 /**
  * Unit tests for SAX handler which parses RSS feeds.
- * 
+ *
  * @author Mr Horn
  */
 public class RSSParserTest {
@@ -59,12 +62,12 @@ public class RSSParserTest {
     assertEquals(expectedDate, item.getPubDate());
 
     assertEquals(2, item.getThumbnails().size());
-   
+
     MediaThumbnail expectedThumbnail0 = new MediaThumbnail(Uri.parse("http://example.com/media/images/12/jpg/_7_2.jpg"), 49, 66);
     assertEquals(expectedThumbnail0.getUrl(), item.getThumbnails().get(0).getUrl());
     assertEquals(expectedThumbnail0.getHeight(), item.getThumbnails().get(0).getHeight());
     assertEquals(expectedThumbnail0.getWidth(), item.getThumbnails().get(0).getWidth());
-    
+
     MediaThumbnail expectedThumbnail1 = new MediaThumbnail(Uri.parse("http://example.com/media/images/12/jpg/_7_2-1.jpg"), 81, 144);
     assertEquals(expectedThumbnail1.getUrl(), item.getThumbnails().get(1).getUrl());
     assertEquals(expectedThumbnail1.getHeight(), item.getThumbnails().get(1).getHeight());

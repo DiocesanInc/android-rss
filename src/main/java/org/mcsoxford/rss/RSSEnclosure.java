@@ -21,7 +21,7 @@ package org.mcsoxford.rss;
  *
  * @author Alexander Ivanov
  */
-public final class MediaEnclosure {
+public final class RSSEnclosure {
 
     private final android.net.Uri url;
     private final int length;
@@ -50,9 +50,9 @@ public final class MediaEnclosure {
     }
 
     /**
-     * Internal constructor for RSSHandler
+     * Internal constructor for RSSHandlerOld
      */
-    MediaEnclosure(android.net.Uri url, int length, String mimeType) {
+    RSSEnclosure(android.net.Uri url, int length, String mimeType) {
         this.url = url;
         this.length = length;
         this.mimeType = mimeType;

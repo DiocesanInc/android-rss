@@ -14,363 +14,378 @@
  * limitations under the License.
  */
 
+
 package org.mcsoxford.rss;
 
-/**
- * Internal SAX handler to efficiently parse RSS feeds. Only a single thread
- * must use this SAX handler.
- * 
- * @author Mr Horn
- */
-class RSSHandler extends org.xml.sax.helpers.DefaultHandler {
+import android.net.Uri;
+import org.mcsoxford.rss.media.MediaContent;
+import org.mcsoxford.rss.media.MediaGroup;
+import org.mcsoxford.rss.media.MediaPlayer;
+import org.mcsoxford.rss.media.MediaThumbnail;
+import org.mcsoxford.rss.util.AttributeParser;
+import org.mcsoxford.rss.util.Dates;
+import org.mcsoxford.rss.util.Integers;
+import org.xml.sax.Attributes;
+import org.xml.sax.helpers.DefaultHandler;
 
-  /**
-   * Constant for XML element name which identifies RSS items.
-   */
-  private static final String RSS_ITEM = "item";
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
-  /**
-   * Constant symbol table to ensure efficient treatment of handler states.
-   */
-  private final java.util.Map<String, Setter> setters;
 
-  /**
-   * Reference is never {@code null}. Visibility must be package-private to
-   * ensure efficiency of inner classes.
-   */
-  final RSSFeed feed = new RSSFeed();
+public class RSSHandler extends DefaultHandler {
 
-  /**
-   * Reference is {@code null} unless started to parse &lt;item&gt; element.
-   * Visibility must be package-private to ensure efficiency of inner classes.
-   */
-  RSSItem item;
+    private static final String RSS_ITEM = "item";
+    private static final String RSS_PUB_DATE = "pubDate";
+    private static final String RSS_LAST_BUILD_DATE = "lastBuildDate";
+    private static final String RSS_TTL = "ttl";
+    private static final String RSS_TITLE = "title";
+    private static final String RSS_CATEGORY = "category";
+    private static final String RSS_ENCLOSURE = "enclosure";
+    private static final String RSS_DESCRIPTION = "description";
+    private static final String RSS_CONTENT = "content:encoded";
+    private static final String RSS_LINK = "link";
+    private static final String RSS_MEDIA_THUMBNAIL = "media:thumbnail";
+    private static final String RSS_MEDIA_GROUP = "media:group";
+    private static final String RSS_MEDIA_CONTENT = "media:content";
+    private static final String RSS_MEDIA_PLAYER = "media:player";
 
-  /**
-   * If not {@code null}, then buffer the characters inside an XML text element.
-   */
-  private StringBuilder buffer;
-
-  /**
-   * Dispatcher to set either {@link #feed} or {@link #item} fields.
-   */
-  private Setter setter;
-
-  /**
-   * Interface to store information about RSS elements.
-   */
-  private static interface Setter {}
-
-  /**
-   * Closure to change fields in POJOs which store RSS content.
-   */
-  private static interface ContentSetter extends Setter {
+    private static final String MEDIA_CONTENT_URL = "url";
+    private static final String MEDIA_CONTENT_FILE_SIZE = "fileSize";
+    private static final String MEDIA_CONTENT_TYPE = "type";
+    private static final String MEDIA_CONTENT_MEDIUM = "medium";
+    private static final String MEDIA_CONTENT_IS_DEFAULT = "isDefault";
+    private static final String MEDIA_CONTENT_EXPRESSION = "expression";
+    private static final String MEDIA_CONTENT_BITRATE = "bitrate";
+    private static final String MEDIA_CONTENT_FRAMERATE = "framerate";
+    private static final String MEDIA_CONTENT_SAMPLINGRATE = "samplingrate";
+    private static final String MEDIA_CONTENT_CHANNELS = "channels";
+    private static final String MEDIA_CONTENT_DURATION = "duration";
+    private static final String MEDIA_CONTENT_HEIGHT = "height";
+    private static final String MEDIA_CONTENT_WIDTH = "width";
+    private static final String MEDIA_CONTENT_LANG = "lang";
 
     /**
-     * Set the field of an object which represents an RSS element.
+     * Constant symbol table to ensure efficient treatment of handler states.
      */
-    void set(String value);
-
-  }
-
-  /**
-   * Closure to change fields in POJOs which store information
-   * about RSS elements which have only attributes.
-   */
-  private static interface AttributeSetter extends Setter {
+    private final Map<String, HandlerBase> handlers;
+    private HandlerBase handler;
 
     /**
-     * Set the XML attributes.
+     * Reference is never {@code null}. Visibility must be package-private to
+     * ensure efficiency of inner classes.
      */
-    void set(org.xml.sax.Attributes attributes);
+    final RSSFeed feed = new RSSFeed();
 
-  }
+    /**
+     * If not {@code null}, then buffer the characters inside an XML text element.
+     */
+    private StringBuilder buffer;
 
-  /**
-   * Setter for RSS &lt;title&gt; elements inside a &lt;channel&gt; or an
-   * &lt;item&gt; element. The title of the RSS feed is set only if
-   * {@link #item} is {@code null}. Otherwise, the title of the RSS
-   * {@link #item} is set.
-   */
-  private final Setter SET_TITLE = new ContentSetter() {
-    @Override
-    public void set(String title) {
-      if (item == null) {
-        feed.setTitle(title);
-      } else {
-        item.setTitle(title);
-      }
+    private RSSItem item;
+    private MediaGroup mediaGroup;
+    private MediaContent mediaContent;
+
+    private interface HandlerBase { }
+
+    private interface ElementAttributesHandler extends HandlerBase {
+        void start(Attributes attributes);
+        void end();
     }
-  };
 
-  /**
-   * Setter for RSS &lt;description&gt; elements inside a &lt;channel&gt; or an
-   * &lt;item&gt; element. The title of the RSS feed is set only if
-   * {@link #item} is {@code null}. Otherwise, the title of the RSS
-   * {@link #item} is set.
-   */
-  private final Setter SET_DESCRIPTION = new ContentSetter() {
-    @Override
-    public void set(String description) {
-      if (item == null) {
-        feed.setDescription(description);
-      } else {
-        item.setDescription(description);
-      }
+    private interface ElementContentHandler extends HandlerBase {
+        void content(String content);
     }
-  };
-  
-  /**
-   * Setter for an RSS &lt;content:encoded&gt; element inside an &lt;item&gt;
-   * element.
-   */
-  private final Setter SET_CONTENT = new ContentSetter() {
-    @Override
-    public void set(String content) {
-      if (item != null) {
-        item.setContent(content);
-      }
+
+    public RSSHandler() {
+        handlers = new HashMap<String, HandlerBase>();
+        handlers.put(RSS_ITEM, itemHandler);
+        handlers.put(RSS_PUB_DATE, pubDateHandler);
+        handlers.put(RSS_LAST_BUILD_DATE, lastBuildDateHandler);
+        handlers.put(RSS_CATEGORY, categoryHandler);
+        handlers.put(RSS_TTL, ttlHandler);
+        handlers.put(RSS_TITLE, titleHandler);
+        handlers.put(RSS_ENCLOSURE, enclosureHandler);
+        handlers.put(RSS_DESCRIPTION, descriptionHandler);
+        handlers.put(RSS_CONTENT, contentHandler);
+        handlers.put(RSS_LINK, linkHandler);
+        handlers.put(RSS_MEDIA_GROUP, mediaGroupHandler);
+        handlers.put(RSS_MEDIA_CONTENT, mediaContentHandler);
+        handlers.put(RSS_MEDIA_THUMBNAIL, mediaThumbnailHandler);
+        handlers.put(RSS_MEDIA_PLAYER, mediaPlayerHandler);
     }
-  };
-
-  /**
-   * Setter for RSS &lt;link&gt; elements inside a &lt;channel&gt; or an
-   * &lt;item&gt; element. The title of the RSS feed is set only if
-   * {@link #item} is {@code null}. Otherwise, the title of the RSS
-   * {@link #item} is set.
-   */
-  private final Setter SET_LINK = new ContentSetter() {
-    @Override
-    public void set(String link) {
-      final android.net.Uri uri = android.net.Uri.parse(link);
-      if (item == null) {
-        feed.setLink(uri);
-      } else {
-        item.setLink(uri);
-      }
-    }
-  };
-
-  /**
-   * Setter for RSS &lt;pubDate&gt; elements inside a &lt;channel&gt; or an
-   * &lt;item&gt; element. The title of the RSS feed is set only if
-   * {@link #item} is {@code null}. Otherwise, the title of the RSS
-   * {@link #item} is set.
-   */
-  private final Setter SET_PUBDATE = new ContentSetter() {
-    @Override
-    public void set(String pubDate) {
-      final java.util.Date date = Dates.parseRfc822(pubDate);
-      if (item == null) {
-        feed.setPubDate(date);
-      } else {
-        item.setPubDate(date);
-      }
-    }
-  };
-
-	/**
-	 * Setter for RSS &lt;lastBuildDate&gt; elements inside a &lt;channel&gt;.
-	 */
-	private final Setter SET_LAST_BUILE_DATE = new ContentSetter() {
-		@Override
-		public void set(String pubDate) {
-			final java.util.Date date = Dates.parseRfc822(pubDate);
-			if (item == null) {
-				feed.setLastBuildDate(date);
-			} else {
-				// Ignore invalid elements which are inside item elements.
-			}
-		}
-	};
-
-	/**
-	 * Setter for RSS &lt;ttl&gt; elements inside a &lt;channel&gt;.
-	 */
-	private final Setter SET_TTL = new ContentSetter() {
-		@Override
-		public void set(String ttl) {
-			final Integer value = Integers.parseInteger(ttl);
-			if (item == null) {
-				feed.setTTL(value);
-			} else {
-				// Ignore invalid elements which are inside item elements.
-			}
-		}
-	};
-
-  /**
-   * Setter for one or multiple RSS &lt;category&gt; elements inside a
-   * &lt;channel&gt; or an &lt;item&gt; element. The title of the RSS feed is
-   * set only if {@link #item} is {@code null}. Otherwise, the title of the RSS
-   * {@link #item} is set.
-   */
-  private final Setter ADD_CATEGORY = new ContentSetter() {
 
     @Override
-    public void set(String category) {
-      if (item == null) {
-        feed.addCategory(category);
-      } else {
-        item.addCategory(category);
-      }
+    public void startElement(String nsURI, String localName, String qname, Attributes attributes) {
+        handler = handlers.get(qname);
+        if (handler != null && handler instanceof ElementAttributesHandler) {
+            ((ElementAttributesHandler) handler).start(attributes);
+        } else {
+            buffer = new StringBuilder();
+        }
     }
-  };
-
-  /**
-   * Setter for one or multiple RSS &lt;media:thumbnail&gt; elements inside an
-   * &lt;item&gt; element. The thumbnail element has only attributes. Both its
-   * height and width are optional. Invalid elements are ignored.
-   */
-  private final Setter ADD_MEDIA_THUMBNAIL = new AttributeSetter() {
-
-    private static final String MEDIA_THUMBNAIL_HEIGHT = "height";
-    private static final String MEDIA_THUMBNAIL_WIDTH = "width";
-    private static final String MEDIA_THUMBNAIL_URL = "url";
-    private static final int DEFAULT_DIMENSION = -1;
 
     @Override
-    public void set(org.xml.sax.Attributes attributes) {
-      if (item == null) {
-        // ignore invalid media:thumbnail elements which are not inside item
-        // elements
-        return;
-      }
+    public void endElement(String nsURI, String localName, String qname) {
+        handler = handlers.get(qname);
+        if (isBuffering()) {
+            ((ElementContentHandler) handler).content(buffer.toString());
+        }
+        buffer = null;
 
-      final int height = MediaAttributes.intValue(attributes, MEDIA_THUMBNAIL_HEIGHT, DEFAULT_DIMENSION);
-      final int width = MediaAttributes.intValue(attributes, MEDIA_THUMBNAIL_WIDTH, DEFAULT_DIMENSION);
-      final String url = MediaAttributes.stringValue(attributes, MEDIA_THUMBNAIL_URL);
-
-      if (url == null) {
-        // ignore invalid media:thumbnail elements which have no URL.
-        return;
-      }
-
-      item.addThumbnail(new MediaThumbnail(android.net.Uri.parse(url), height, width));
+        if (handler != null && handler instanceof ElementAttributesHandler) {
+            ((ElementAttributesHandler) handler).end();
+        }
     }
 
-  };
-
-	/**
-	 * Setter for RSS &lt;enclosure&gt; elements inside an &lt;item&gt; element.
-	 */
-	private final Setter SET_ENCLOSURE = new AttributeSetter() {
-
-		private static final String URL = "url";
-		private static final String LENGTH = "length";
-		private static final String MIMETYPE = "type";
-
-		@Override
-		public void set(org.xml.sax.Attributes attributes) {
-			if (item == null) {
-				// Ignore invalid elements which are not inside item elements.
-				return;
-			}
-
-			final String url = MediaAttributes.stringValue(attributes, URL);
-			final Integer length = MediaAttributes.intValue(attributes, LENGTH);
-			final String mimeType = MediaAttributes.stringValue(attributes,
-					MIMETYPE);
-
-			if (url == null || length == null || mimeType == null) {
-				// Ignore invalid elements.
-				return;
-			}
-
-			MediaEnclosure enclosure = new MediaEnclosure(
-					android.net.Uri.parse(url), length, mimeType);
-			item.setEnclosure(enclosure);
-		}
-	};
-
-  /**
-   * Use configuration to optimize initial capacities of collections
-   */
-  private final RSSConfig config;
-
-  /**
-   * Instantiate a SAX handler which can parse a subset of RSS 2.0 feeds.
-   * 
-   * @param config configuration for the initial capacities of collections
-   */
-  RSSHandler(RSSConfig config) {
-    this.config = config;
-
-    // initialize dispatchers to manage the state of the SAX handler
-    setters = new java.util.HashMap<String, Setter>(/* 2^3 */16);
-    setters.put("title", SET_TITLE);
-    setters.put("description", SET_DESCRIPTION);
-    setters.put("content:encoded", SET_CONTENT);
-    setters.put("link", SET_LINK);
-    setters.put("category", ADD_CATEGORY);
-    setters.put("pubDate", SET_PUBDATE);
-    setters.put("media:thumbnail", ADD_MEDIA_THUMBNAIL);
-    setters.put("lastBuildDate", SET_LAST_BUILE_DATE);
-    setters.put("ttl", SET_TTL);
-    setters.put("enclosure", SET_ENCLOSURE);
-  }
-
-  /**
-   * Returns the RSS feed after this SAX handler has processed the XML document.
-   */
-  RSSFeed feed() {
-    return feed;
-  }
-
-  /**
-   * Identify the appropriate dispatcher which should be used to store XML data
-   * in a POJO. Unsupported RSS 2.0 elements are currently ignored.
-   */
-  @Override
-  public void startElement(String nsURI, String localName, String qname,
-      org.xml.sax.Attributes attributes) {
-    // Lookup dispatcher in hash table
-    setter = setters.get(qname);
-    if (setter == null) {
-      if (RSS_ITEM.equals(qname)) {
-        item = new RSSItem(config.categoryAvg, config.thumbnailAvg);
-      }
-    } else if (setter instanceof AttributeSetter) {
-      ((AttributeSetter) setter).set(attributes);
-    } else {
-      // Buffer supported RSS content data
-      buffer = new StringBuilder();
+    @Override
+    public void characters(char ch[], int start, int length) {
+        if (isBuffering()) {
+            buffer.append(ch, start, length);
+        }
     }
-  }
 
-  @Override
-  public void endElement(String nsURI, String localName, String qname) {
-    if (isBuffering()) {
-      // set field of an RSS feed or RSS item
-      ((ContentSetter) setter).set(buffer.toString());
-
-      // clear buffer
-      buffer = null;
-    } else if (RSS_ITEM.equals(qname)) {
-      feed.addItem(item);
-
-      // (re)enter <channel> scope
-      item = null;
+    /**
+     * Determines if the SAX parser is ready to receive data inside an XML element
+     * such as &lt;title&gt; or &lt;description&gt;.
+     *
+     * @return boolean {@code true} if the SAX handler parses data inside an XML
+     * element, {@code false} otherwise
+     */
+    boolean isBuffering() {
+        return buffer != null && handler instanceof ElementContentHandler;
     }
-  }
 
-  @Override
-  public void characters(char ch[], int start, int length) {
-    if (isBuffering()) {
-      buffer.append(ch, start, length);
+    RSSFeed feed() {
+        return feed;
     }
-  }
 
-  /**
-   * Determines if the SAX parser is ready to receive data inside an XML element
-   * such as &lt;title&gt; or &lt;description&gt;.
-   * 
-   * @return boolean {@code true} if the SAX handler parses data inside an XML
-   *         element, {@code false} otherwise
-   */
-  boolean isBuffering() {
-    return buffer != null && setter != null;
-  }
+    private final ElementAttributesHandler itemHandler = new ElementAttributesHandler() {
+        @Override
+        public void start(Attributes attributes) {
+            item = new RSSItem();
+        }
 
+        @Override
+        public void end() {
+            feed.addItem(item);
+        }
+    };
+
+    private final ElementContentHandler pubDateHandler = new ElementContentHandler() {
+
+        @Override
+        public void content(String content) {
+            final Date date = Dates.parseRfc822(content);
+            if (item != null) {
+                item.setPubDate(date);
+            } else {
+                feed.setPubDate(date);
+            }
+        }
+    };
+
+    private final ElementContentHandler categoryHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            if (item == null) {
+                feed.addCategory(content);
+            } else {
+                item.addCategory(content);
+            }
+        }
+    };
+
+    private final ElementContentHandler ttlHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            final Integer value = Integers.parseInteger(content);
+            if (item == null) {
+                feed.setTTL(value);
+            }
+        }
+    };
+
+    private final ElementContentHandler lastBuildDateHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            final Date date = Dates.parseRfc822(content);
+            if (item == null) {
+                feed.setLastBuildDate(date);
+            }
+        }
+    };
+
+    private final ElementContentHandler titleHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            if (item == null) {
+                feed.setTitle(content);
+            } else {
+                item.setTitle(content);
+            }
+        }
+    };
+
+    private final ElementContentHandler descriptionHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            if (item == null) {
+                feed.setDescription(content);
+            } else {
+                item.setDescription(content);
+            }
+        }
+    };
+
+    private final ElementAttributesHandler enclosureHandler = new ElementAttributesHandler() {
+        @Override
+        public void start(Attributes attributes) {
+            if (item != null) {
+                final String url = AttributeParser.stringValue(attributes, "url");
+                final Integer length = AttributeParser.intValue(attributes, "length");
+                final String mimeType = AttributeParser.stringValue(attributes, "type");
+
+                if (url == null || length == null || mimeType == null) {
+                    // Ignore invalid elements.
+                    return;
+                }
+
+                RSSEnclosure enclosure = new RSSEnclosure(
+                    Uri.parse(url), length, mimeType
+                );
+                item.setEnclosure(enclosure);
+            }
+        }
+
+        @Override
+        public void end() { }
+    };
+
+    private final ElementContentHandler contentHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            if (item != null) {
+                item.setContent(content);
+            }
+        }
+    };
+
+    private final ElementContentHandler linkHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            final Uri uri = Uri.parse(content);
+            if (item == null) {
+                feed.setLink(uri);
+            } else {
+                item.setLink(uri);
+            }
+        }
+    };
+
+    private final ElementAttributesHandler mediaThumbnailHandler = new ElementAttributesHandler() {
+        private static final int DEFAULT_VALUE = -1;
+
+        @Override
+        public void start(Attributes attributes) {
+            Uri url = Uri.parse(AttributeParser.stringValue(attributes, "url"));
+            // URL attribute is required
+            if (url == null) {
+                return;
+            }
+
+            MediaThumbnail thumbnail = new MediaThumbnail(
+                url,
+                AttributeParser.intValue(attributes, "height", DEFAULT_VALUE),
+                AttributeParser.intValue(attributes, "width", DEFAULT_VALUE),
+                AttributeParser.stringValue(attributes, "time")
+            );
+
+            if (mediaContent != null) {
+                mediaContent.addThumbnail(thumbnail);
+            } else if (mediaGroup != null) {
+                mediaGroup.addThumbnail(thumbnail);
+            } else if (item != null) {
+                item.addThumbnail(thumbnail);
+            } else if (feed != null) {
+                feed.addThumbnail(thumbnail);
+            }
+        }
+
+        @Override
+        public void end() { }
+    };
+
+    private final ElementAttributesHandler mediaGroupHandler = new ElementAttributesHandler() {
+        @Override
+        public void start(Attributes attributes) {
+            if (item != null) {
+                mediaGroup = new MediaGroup();
+            }
+        }
+
+        @Override
+        public void end() {
+            if (item != null) {
+                item.addMediaGroup(mediaGroup);
+            }
+            mediaGroup = null;
+        }
+    };
+
+    private final ElementAttributesHandler mediaContentHandler = new ElementAttributesHandler() {
+        private static final int DEFAULT_VALUE = -1;
+
+        @Override
+        public void start(Attributes attributes) {
+            if (item != null) {
+                mediaContent = new MediaContent(
+                    Uri.parse(AttributeParser.stringValue(attributes, MEDIA_CONTENT_URL)),
+                    AttributeParser.intValue(attributes, MEDIA_CONTENT_FILE_SIZE, DEFAULT_VALUE),
+                    AttributeParser.stringValue(attributes, MEDIA_CONTENT_TYPE),
+                    AttributeParser.stringValue(attributes, MEDIA_CONTENT_MEDIUM),
+                    AttributeParser.booleanValue(attributes, MEDIA_CONTENT_IS_DEFAULT, false),
+                    AttributeParser.stringValue(attributes, MEDIA_CONTENT_EXPRESSION),
+                    AttributeParser.intValue(attributes, MEDIA_CONTENT_BITRATE, DEFAULT_VALUE),
+                    AttributeParser.intValue(attributes, MEDIA_CONTENT_FRAMERATE, DEFAULT_VALUE),
+                    AttributeParser.intValue(attributes, MEDIA_CONTENT_SAMPLINGRATE, DEFAULT_VALUE),
+                    AttributeParser.intValue(attributes, MEDIA_CONTENT_CHANNELS, DEFAULT_VALUE),
+                    AttributeParser.intValue(attributes, MEDIA_CONTENT_DURATION, DEFAULT_VALUE),
+                    AttributeParser.intValue(attributes, MEDIA_CONTENT_HEIGHT, DEFAULT_VALUE),
+                    AttributeParser.intValue(attributes, MEDIA_CONTENT_WIDTH, DEFAULT_VALUE),
+                    AttributeParser.stringValue(attributes, MEDIA_CONTENT_LANG)
+                );
+            }
+        }
+
+        @Override
+        public void end() {
+            if (item != null) {
+                if (mediaGroup != null) {
+                    mediaGroup.addMediaContent(mediaContent);
+                } else {
+                    item.addMediaContent(mediaContent);
+                }
+            }
+            mediaContent = null;
+        }
+    };
+
+    private final ElementAttributesHandler mediaPlayerHandler = new ElementAttributesHandler() {
+        private static final int DEFAULT_VALUE = -1;
+
+        @Override
+        public void start(Attributes attributes) {
+            if (mediaContent != null) {
+                mediaContent.setMediaPlayer(new MediaPlayer(
+                    Uri.parse(AttributeParser.stringValue(attributes, "url")),
+                    AttributeParser.intValue(attributes, "width", DEFAULT_VALUE),
+                    AttributeParser.intValue(attributes, "height", DEFAULT_VALUE)
+                ));
+            }
+        }
+
+        @Override
+        public void end() { }
+    };
 }
-

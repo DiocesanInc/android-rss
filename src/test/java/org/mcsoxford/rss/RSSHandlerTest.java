@@ -1,15 +1,17 @@
 package org.mcsoxford.rss;
 
-import java.util.Iterator;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.xml.sax.helpers.AttributesImpl;
+
+import java.util.Iterator;
 
 import static org.junit.Assert.*;
 
 /**
- * Unit test for {@link RSSHandler} SAX handler.
- * 
+ * Unit test for {@link RSSHandlerOld} SAX handler.
+ *
  * @author Mr Horn
  */
 public class RSSHandlerTest {
@@ -21,7 +23,7 @@ public class RSSHandlerTest {
 
   @Before
   public void setup() {
-    handler = new RSSHandler(new RSSConfig());
+    handler = new RSSHandler();
   }
 
   @Test
@@ -86,23 +88,11 @@ public class RSSHandlerTest {
     isBufferingItem();
 
     // add required url attribute to media:thumbnail element
-    final org.xml.sax.helpers.AttributesImpl attributes = new org.xml.sax.helpers.AttributesImpl();
+    final AttributesImpl attributes = new AttributesImpl();
     attributes.addAttribute(null, null, "url", null, "http://example.com/thumbnails/1.jpg");
 
     handler.startElement(null, null, "media:thumbnail", attributes);
     assertFalse(handler.isBuffering());
-  }
-
-  @Test
-  public void parseChannelWithThumbnail() {
-    // no exception
-    handler.startElement(null, null, "media:thumbnail", null);
-  }
-
-  @Test
-  public void parseThumbnailWithoutUrl() {
-    // no exception
-    handler.startElement(null, null, "media:thumbnail", new org.xml.sax.helpers.AttributesImpl());
   }
 
   @Test

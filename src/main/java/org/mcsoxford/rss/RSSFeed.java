@@ -16,48 +16,65 @@
 
 package org.mcsoxford.rss;
 
+import org.mcsoxford.rss.media.MediaThumbnail;
+
+import java.util.*;
+
 /**
  * Data about an RSS feed and its RSS items.
- * 
+ *
  * @author Mr Horn
  */
 public class RSSFeed extends RSSBase {
 
-  private final java.util.List<RSSItem> items;
-	private java.util.Date lastBuildDate;
-	private Integer ttl;
+    private final List<RSSItem> items;
+    private Date lastBuildDate;
+    private Integer ttl;
+    private List<MediaThumbnail> thumbnails;
 
-  RSSFeed() {
-    super(/* initial capacity for category names */ (byte) 3);
-    items = new java.util.LinkedList<RSSItem>();
-  }
+    RSSFeed() {
+        super(/* initial capacity for category names */ (byte) 3);
+        items = new LinkedList<RSSItem>();
+        thumbnails = new ArrayList<MediaThumbnail>();
+    }
 
-  /**
-   * Returns an unmodifiable list of RSS items.
-   */
-  public java.util.List<RSSItem> getItems() {
-    return java.util.Collections.unmodifiableList(items);
-  }
+    /**
+     * Returns an unmodifiable list of RSS items.
+     */
+    public List<RSSItem> getItems() {
+        return Collections.unmodifiableList(items);
+    }
 
-  void addItem(RSSItem item) {
-    items.add(item);
-  }
+    void addItem(RSSItem item) {
+        items.add(item);
+    }
 
-	void setLastBuildDate(java.util.Date date) {
-		lastBuildDate = date;
-	}
+    void setLastBuildDate(Date date) {
+        lastBuildDate = date;
+    }
 
-	public java.util.Date getLastBuildDate() {
-		return lastBuildDate;
-	}
+    public Date getLastBuildDate() {
+        return lastBuildDate;
+    }
 
-	void setTTL(Integer value) {
-		ttl = value;
-	}
+    void setTTL(Integer value) {
+        ttl = value;
+    }
 
-	public Integer getTTL() {
-		return ttl;
-	}
+    public Integer getTTL() {
+        return ttl;
+    }
 
+    void addThumbnail(MediaThumbnail thumbnail) {
+        thumbnails.add(thumbnail);
+    }
+
+    /**
+     * Returns an unmodifiable list of thumbnails. The return value is never
+     * {@code null}. Images are in order of importance.
+     */
+    public List<MediaThumbnail> getThumbnails() {
+        return Collections.unmodifiableList(thumbnails);
+    }
 }
 

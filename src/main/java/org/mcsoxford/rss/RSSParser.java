@@ -16,6 +16,10 @@
 
 package org.mcsoxford.rss;
 
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -23,13 +27,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-
 /**
  * Thread-safe RSS parser SPI implementation.
- * 
+ *
  * @author Mr Horn
  */
 public class RSSParser implements RSSParserSPI {
@@ -43,7 +43,7 @@ public class RSSParser implements RSSParserSPI {
   /**
    * Parses input stream as RSS feed. It is the responsibility of the caller to
    * close the RSS feed input stream.
-   * 
+   *
    * @param feed RSS 2.0 feed input stream
    * @return in-memory representation of RSS feed
    * @throws RSSFault if an unrecoverable parse error occurs
@@ -73,7 +73,7 @@ public class RSSParser implements RSSParserSPI {
 
   /**
    * Parses input stream as an RSS 2.0 feed.
-   * 
+   *
    * @return in-memory representation of an RSS feed
    * @throws IllegalArgumentException if either argument is {@code null}
    */
@@ -89,7 +89,7 @@ public class RSSParser implements RSSParserSPI {
     // See also http://www.w3.org/TR/REC-xml/#sec-guessing
     final InputSource source = new InputSource(feed);
     final XMLReader xmlreader = parser.getXMLReader();
-    final RSSHandler handler = new RSSHandler(config);
+    final RSSHandler handler = new RSSHandler();
 
     xmlreader.setContentHandler(handler);
     xmlreader.parse(source);
