@@ -339,8 +339,9 @@ public class RSSHandler extends DefaultHandler {
         @Override
         public void start(Attributes attributes) {
             if (item != null) {
+                String urlString = AttributeParser.stringValue(attributes, MEDIA_CONTENT_URL);
                 mediaContent = new MediaContent(
-                    Uri.parse(AttributeParser.stringValue(attributes, MEDIA_CONTENT_URL)),
+                    urlString != null ? Uri.parse(urlString) : null,
                     AttributeParser.intValue(attributes, MEDIA_CONTENT_FILE_SIZE, DEFAULT_VALUE),
                     AttributeParser.stringValue(attributes, MEDIA_CONTENT_TYPE),
                     AttributeParser.stringValue(attributes, MEDIA_CONTENT_MEDIUM),
