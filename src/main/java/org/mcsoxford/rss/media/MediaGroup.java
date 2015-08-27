@@ -23,6 +23,7 @@ import java.util.List;
 public class MediaGroup {
     protected List<MediaContent> content;
     protected List<MediaThumbnail> thumbnails;
+    protected String description;
 
     public MediaGroup() {
         content = new ArrayList<MediaContent>();
@@ -47,5 +48,13 @@ public class MediaGroup {
      */
     public List<MediaThumbnail> getThumbnails() {
         return Collections.unmodifiableList(thumbnails);
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

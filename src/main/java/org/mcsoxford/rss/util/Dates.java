@@ -36,6 +36,9 @@ public final class Dates {
   private static final SimpleDateFormat RFC822 = new SimpleDateFormat(
       "EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
 
+  private static final SimpleDateFormat ISO8601 = new SimpleDateFormat(
+      "yyyy-MM-dd'T'HH:mm:ssZ", Locale.ENGLISH);
+
   /* Hide constructor */
   private Dates() {}
 
@@ -52,5 +55,12 @@ public final class Dates {
     }
   }
 
+  public static Date parseIso8601(String date) {
+    try {
+      return ISO8601.parse(date);
+    } catch (ParseException e) {
+      throw new RSSFault(e);
+    }
+  }
 }
 

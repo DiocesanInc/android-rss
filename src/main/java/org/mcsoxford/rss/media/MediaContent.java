@@ -37,6 +37,7 @@ public class MediaContent {
     protected int height;
     protected int width;
     protected String lang;
+    protected String description;
 
     protected MediaPlayer mediaPlayer;
     protected List<MediaThumbnail> thumbnails;
@@ -118,6 +119,14 @@ public class MediaContent {
 
     public String getLang() {
         return lang;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public void setMediaPlayer(MediaPlayer player) {

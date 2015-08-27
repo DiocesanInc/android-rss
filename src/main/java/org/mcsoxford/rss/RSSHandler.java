@@ -49,6 +49,15 @@ public class RSSHandler extends DefaultHandler {
     private static final String RSS_MEDIA_GROUP = "media:group";
     private static final String RSS_MEDIA_CONTENT = "media:content";
     private static final String RSS_MEDIA_PLAYER = "media:player";
+    private static final String RSS_MEDIA_DESCRIPTION = "media:description";
+
+    private static final String ATOM_FEED = "feed";
+    private static final String ATOM_ENTRY = "entry";
+    private static final String ATOM_SUBTITLE = "subtitle";
+    private static final String ATOM_PUBLISHED = "published";
+    private static final String ATOM_UPDATED = "udpated";
+    private static final String ATOM_SUMAMRY = "summary";
+    private static final String ATOM_CONTENT = "summary";
 
     private static final String MEDIA_CONTENT_URL = "url";
     private static final String MEDIA_CONTENT_FILE_SIZE = "fileSize";
@@ -100,8 +109,11 @@ public class RSSHandler extends DefaultHandler {
     public RSSHandler() {
         handlers = new HashMap<String, HandlerBase>();
         handlers.put(RSS_ITEM, itemHandler);
+        handlers.put(ATOM_ENTRY, itemHandler);
         handlers.put(RSS_PUB_DATE, pubDateHandler);
+        handlers.put(ATOM_PUBLISHED, atomPublishDateHandler);
         handlers.put(RSS_LAST_BUILD_DATE, lastBuildDateHandler);
+        handlers.put(ATOM_UPDATED, atomUpdatedDateHandler);
         handlers.put(RSS_CATEGORY, categoryHandler);
         handlers.put(RSS_TTL, ttlHandler);
         handlers.put(RSS_TITLE, titleHandler);
@@ -113,6 +125,7 @@ public class RSSHandler extends DefaultHandler {
         handlers.put(RSS_MEDIA_CONTENT, mediaContentHandler);
         handlers.put(RSS_MEDIA_THUMBNAIL, mediaThumbnailHandler);
         handlers.put(RSS_MEDIA_PLAYER, mediaPlayerHandler);
+        handlers.put(RSS_MEDIA_DESCRIPTION, mediaDescriptionHandler);
     }
 
     @Override
@@ -185,6 +198,19 @@ public class RSSHandler extends DefaultHandler {
         }
     };
 
+    private final ElementContentHandler atomPublishDateHandler = new ElementContentHandler() {
+
+        @Override
+        public void content(String content) {
+            final Date date = Dates.parseIso8601(content);
+            if (item != null) {
+                item.setPubDate(date);
+            } else {
+                feed.setPubDate(date);
+            }
+        }
+    };
+
     private final ElementContentHandler categoryHandler = new ElementContentHandler() {
         @Override
         public void content(String content) {
@@ -202,6 +228,16 @@ public class RSSHandler extends DefaultHandler {
             final Integer value = Integers.parseInteger(content);
             if (item == null) {
                 feed.setTTL(value);
+            }
+        }
+    };
+
+    private final ElementContentHandler atomUpdatedDateHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            final Date date = Dates.parseIso8601(content);
+            if (item == null) {
+                feed.setLastBuildDate(date);
             }
         }
     };
@@ -388,5 +424,18 @@ public class RSSHandler extends DefaultHandler {
 
         @Override
         public void end() { }
+    };
+
+    private final ElementContentHandler mediaDescriptionHandler = new ElementContentHandler() {
+        @Override
+        public void content(String content) {
+            if (mediaContent != null) {
+                mediaContent.setDescription(content);
+            } else if (mediaGroup != null) {
+                mediaGroup.setDescription(content);
+            } else if (item != null) {
+                item.setDescription(content);
+            }
+        }
     };
 }
