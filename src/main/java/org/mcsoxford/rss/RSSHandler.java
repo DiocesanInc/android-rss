@@ -106,6 +106,8 @@ public class RSSHandler extends DefaultHandler {
         void content(String content);
     }
 
+    private abstract class ElementHandler implements ElementAttributesHandler, ElementContentHandler { }
+
     public RSSHandler() {
         handlers = new HashMap<String, HandlerBase>();
         handlers.put(RSS_ITEM, itemHandler);
@@ -131,9 +133,10 @@ public class RSSHandler extends DefaultHandler {
     @Override
     public void startElement(String nsURI, String localName, String qname, Attributes attributes) {
         handler = handlers.get(qname);
-        if (handler != null && handler instanceof ElementAttributesHandler) {
+        if (handler instanceof ElementAttributesHandler) {
             ((ElementAttributesHandler) handler).start(attributes);
-        } else {
+        }
+        if (handler instanceof ElementContentHandler) {
             buffer = new StringBuilder();
         }
     }
@@ -146,7 +149,7 @@ public class RSSHandler extends DefaultHandler {
         }
         buffer = null;
 
-        if (handler != null && handler instanceof ElementAttributesHandler) {
+        if (handler instanceof ElementAttributesHandler) {
             ((ElementAttributesHandler) handler).end();
         }
     }
@@ -307,9 +310,28 @@ public class RSSHandler extends DefaultHandler {
         }
     };
 
-    private final ElementContentHandler linkHandler = new ElementContentHandler() {
+    private final ElementHandler linkHandler = new ElementHandler() {
         @Override
-        public void content(String content) {
+        public void start(Attributes attributes) {
+            String linkString = AttributeParser.stringValue(attributes, "href");
+            if (linkString == null) {
+                return;
+            }
+
+            final Uri uri = Uri.parse(linkString);
+            if (item == null) {
+                feed.setLink(uri);
+            } else {
+                item.setLink(uri);
+            }
+        }
+
+        @Override
+         public void content(String content) {
+            if (content.length() < 1) {
+                return;
+            }
+
             final Uri uri = Uri.parse(content);
             if (item == null) {
                 feed.setLink(uri);
@@ -317,6 +339,9 @@ public class RSSHandler extends DefaultHandler {
                 item.setLink(uri);
             }
         }
+
+        @Override
+        public void end() { }
     };
 
     private final ElementAttributesHandler mediaThumbnailHandler = new ElementAttributesHandler() {

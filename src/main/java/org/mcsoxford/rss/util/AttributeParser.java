@@ -36,6 +36,9 @@ public final class AttributeParser {
      * The return value is {@code null} if no attribute with such name exists.
      */
     public static String stringValue(Attributes attributes, String name) {
+        if (attributes == null) {
+            return null;
+        }
         return attributes.getValue(name);
     }
 
