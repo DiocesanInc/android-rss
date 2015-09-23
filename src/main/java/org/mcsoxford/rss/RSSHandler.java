@@ -55,8 +55,8 @@ public class RSSHandler extends DefaultHandler {
     private static final String ATOM_ENTRY = "entry";
     private static final String ATOM_SUBTITLE = "subtitle";
     private static final String ATOM_PUBLISHED = "published";
-    private static final String ATOM_UPDATED = "udpated";
-    private static final String ATOM_SUMAMRY = "summary";
+    private static final String ATOM_UPDATED = "updated";
+    private static final String ATOM_SUMMARY = "summary";
     private static final String ATOM_CONTENT = "summary";
 
     private static final String MEDIA_CONTENT_URL = "url";
