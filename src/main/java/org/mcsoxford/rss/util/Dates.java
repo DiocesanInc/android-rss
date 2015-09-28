@@ -30,37 +30,70 @@ import java.util.Locale;
  */
 public final class Dates {
 
-  /**
-   * @see <a href="http://www.ietf.org/rfc/rfc0822.txt">RFC 822</a>
-   */
-  private static final SimpleDateFormat RFC822 = new SimpleDateFormat(
-      "EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
+    /**
+     * @see <a href="http://www.ietf.org/rfc/rfc0822.txt">RFC 822</a>
+     */
+    private static final SimpleDateFormat[][] rfc822Formats = {
+        {
+            new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH),
+            new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss zzz", Locale.ENGLISH),
+            new SimpleDateFormat("EEE, d MMM yyyy HH:mm zzz", Locale.ENGLISH),
+            new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss", Locale.ENGLISH),
+            new SimpleDateFormat("EEE, d MMM yyyy HH:mm", Locale.ENGLISH),
+        },
+        {
+            new SimpleDateFormat("d MMM yyyy HH:mm:ss zzz", Locale.ENGLISH),
+            new SimpleDateFormat("d MMM yyyy HH:mm zzz", Locale.ENGLISH),
+            new SimpleDateFormat("d MMM yyyy HH:mm:ss", Locale.ENGLISH),
+            new SimpleDateFormat("d MMM yyyy HH:mm", Locale.ENGLISH),
+        }
+    };
 
-  private static final SimpleDateFormat ISO8601 = new SimpleDateFormat(
-      "yyyy-MM-dd'T'HH:mm:ssZ", Locale.ENGLISH);
+    /**
+     * @see <a href="https://www.ietf.org/rfc/rfc3339.txt">RFC 3339</a>
+     */
+    private static final SimpleDateFormat[] iso8601Formats = {
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.ENGLISH),
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZZZ", Locale.ENGLISH),
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZZ", Locale.ENGLISH),
+        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH),
+    };
 
-  /* Hide constructor */
-  private Dates() {}
-
-  /**
-   * Parses string as an RFC 822 date/time.
-   *
-   * @throws RSSFault if the string is not a valid RFC 822 date/time
-   */
-  public static Date parseRfc822(String date) {
-    try {
-      return RFC822.parse(date);
-    } catch (ParseException e) {
-      throw new RSSFault(e);
+    /* Hide constructor */
+    private Dates() {
     }
-  }
 
-  public static Date parseIso8601(String date) {
-    try {
-      return ISO8601.parse(date);
-    } catch (ParseException e) {
-      throw new RSSFault(e);
+    /**
+     * Parses string as an RFC 822 date/time.
+     *
+     * @throws RSSFault if the string is not a valid RFC 822 date/time
+     */
+    public static Date parseRfc822(String date) {
+        int section = 0;
+        if (date.indexOf(',') < 0) {
+            // Skip the first section of formats that contain commas in the date format
+            section = 1;
+        }
+
+        for (SimpleDateFormat df : rfc822Formats[section]) {
+            try {
+                return df.parse(date);
+            } catch (ParseException e) {
+                continue;
+            }
+        }
+        return null;
     }
-  }
+
+    public static Date parseIso8601(String date) {
+        for (SimpleDateFormat df : iso8601Formats) {
+            try {
+                return df.parse(date);
+            } catch (ParseException e) {
+                continue;
+            }
+        }
+        return null;
+    }
 }
 
