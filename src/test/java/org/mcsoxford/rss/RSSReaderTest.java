@@ -8,7 +8,7 @@ import static org.junit.Assert.*;
 
 /**
  * Integration test of HTTP client which retrieves RSS feeds.
- * 
+ *
  * @author Mr Horn
  */
 public class RSSReaderTest {
@@ -40,11 +40,11 @@ public class RSSReaderTest {
     assertEquals("BBC News - World", feed.getTitle());
 
     assertEquals(
-        android.net.Uri.parse("http://www.bbc.co.uk/news/world/#sa-ns_mchannel=rss&ns_source=PublicRSS20-sa"),
+        android.net.Uri.parse("http://www.bbc.co.uk/news/"),
         feed.getLink());
 
     assertEquals(
-        "The latest stories from the World section of the BBC News web site.",
+        "BBC News - World",
         feed.getDescription());
   }
 
