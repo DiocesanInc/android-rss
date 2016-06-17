@@ -51,6 +51,8 @@ public class RSSHandler extends DefaultHandler {
     private static final String RSS_MEDIA_PLAYER = "media:player";
     private static final String RSS_MEDIA_DESCRIPTION = "media:description";
 
+    private static final String RSS_ITUNES_IMAGE = "itunes:image";
+
     private static final String ATOM_FEED = "feed";
     private static final String ATOM_ENTRY = "entry";
     private static final String ATOM_SUBTITLE = "subtitle";
@@ -128,6 +130,7 @@ public class RSSHandler extends DefaultHandler {
         handlers.put(RSS_MEDIA_THUMBNAIL, mediaThumbnailHandler);
         handlers.put(RSS_MEDIA_PLAYER, mediaPlayerHandler);
         handlers.put(RSS_MEDIA_DESCRIPTION, mediaDescriptionHandler);
+        handlers.put(RSS_ITUNES_IMAGE, itunesImageHandler);
     }
 
     @Override
@@ -462,5 +465,25 @@ public class RSSHandler extends DefaultHandler {
                 item.setDescription(content);
             }
         }
+    };
+
+    private final ElementAttributesHandler itunesImageHandler = new ElementAttributesHandler() {
+        @Override
+        public void start(Attributes attributes) {
+            if (item != null) {
+                final String imageUrl = AttributeParser.stringValue(attributes, "href");
+
+                if (imageUrl == null) {
+                    return;
+                }
+
+                if (item != null) {
+                    item.setItunesImageUrl(Uri.parse(imageUrl));
+                }
+            }
+        }
+
+        @Override
+        public void end() { }
     };
 }

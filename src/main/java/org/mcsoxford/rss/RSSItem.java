@@ -16,6 +16,7 @@
 
 package org.mcsoxford.rss;
 
+import android.net.Uri;
 import org.mcsoxford.rss.media.MediaContent;
 import org.mcsoxford.rss.media.MediaGroup;
 import org.mcsoxford.rss.media.MediaThumbnail;
@@ -35,6 +36,7 @@ public class RSSItem extends RSSBase {
     protected final List<MediaContent> mediaContent;
     protected String content;
     protected RSSEnclosure enclosure;
+    protected Uri itunesImageUrl;
 
 
     public RSSItem() {
@@ -100,4 +102,11 @@ public class RSSItem extends RSSBase {
         return mediaContent;
     }
 
+    public Uri getItunesImageUrl() {
+        return itunesImageUrl;
+    }
+
+    public void setItunesImageUrl(Uri itunesImageUrl) {
+        this.itunesImageUrl = itunesImageUrl;
+    }
 }
